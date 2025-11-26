@@ -11,4 +11,6 @@ add_executable(module_pipeline ${SOURCES}
         include/IModule.h
         include/LoggerBase.h
         include/CameraSensor.h
-        src/CameraSensor.cpp)
+        src/CameraSensor.cpp
+        include/MovementDetector.h
+        src/MovementDetector.cpp)

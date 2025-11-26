@@ -2,15 +2,19 @@ cmake_minimum_required(VERSION 3.28)
 project(module_pipe_project)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include)
+# Creating executable
+add_executable(module_pipeline_project)
 
-file(GLOB SOURCES src/*.cpp)
+#Add includes
+target_include_directories(module_pipeline_project
+PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-add_executable(module_pipeline ${SOURCES}
-        include/IModule.h
-        include/LoggerBase.h
-        include/CameraSensor.h
+#Add cpp sources
+target_sources(module_pipeline_project
+PRIVATE src/main.cpp
         src/CameraSensor.cpp
-        include/MovementDetector.h
-        src/MovementDetector.cpp)
+        src/MovementDetector.cpp
+        src/ColorProcessor.cpp
+)

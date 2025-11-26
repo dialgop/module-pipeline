@@ -17,5 +17,5 @@ void MovementDetector::run() {
 }
 
 std::string MovementDetector::name() const {
-    return "MovementDetector"
+    return "MovementDetector";
 }

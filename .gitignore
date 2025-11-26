@@ -1,0 +1,18 @@
+# Build directories
+build/
+cmake-build-*/
+
+# CLion / IntelliJ
+.idea/
+
+# VSCode
+.vscode/
+
+# OS files
+*.DS_Store
+Thumbs.db
+
+# Executables and binaries
+*.exe
+*.obj
+*.o

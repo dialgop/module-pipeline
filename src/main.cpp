@@ -1,6 +1,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "CameraSensor.h"
 #include "MovementDetector.h"
@@ -13,10 +14,8 @@ int main() {
     pipeline.push_back(std::make_shared<MovementDetector>());
     pipeline.push_back(std::make_shared<ColorProcessor>());
 
-    for (auto& pipe : pipeline) {
-        std::cout << "== Executing: " << pipe->name() << " ==" << std::endl;
-        pipe->run();
-        std::cout << std::endl;
-    }
+    std::cout << "Executing: \n";
+    std::for_each(pipeline.begin(), pipeline.end(), [](const std::shared_ptr<IModule>& module){std::cout << module->name() << "\n";});
+
     return 0;
 }

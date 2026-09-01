@@ -11,6 +11,6 @@ public:
     ColorProcessor();
     ~ColorProcessor() override;
 
-    void run() override;
+    void run(FrameContext& ctx) override;
     [[nodiscard]] std::string name() const override;
 };

@@ -12,7 +12,7 @@ CameraSensor::~CameraSensor() {
     log("Finished CameraSensor");
 }
 
-void CameraSensor::run() {
+void CameraSensor::run(FrameContext& ctx) {
     log("Capturing camera frame " + std::to_string(cameraId));
 }
 

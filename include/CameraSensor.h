@@ -11,7 +11,7 @@ public:
     explicit CameraSensor(int id);
     ~CameraSensor() override;
 
-    void run() override;
+    void run(FrameContext& ctx) override;
     [[nodiscard]] std::string name() const override;
 
 private:

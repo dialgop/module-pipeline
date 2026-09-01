@@ -12,7 +12,7 @@ MovementDetector::~MovementDetector() {
     log("Destroyed MovementDetector");
 }
 
-void MovementDetector::run() {
+void MovementDetector::run(FrameContext& ctx) {
     log("Analyzing MovementDetector... Detected Movement!");
 }
 

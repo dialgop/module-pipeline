@@ -12,7 +12,7 @@ ColorProcessor::~ColorProcessor() {
     log("Terminated ColorProcessor");
 }
 
-void ColorProcessor::run() {
+void ColorProcessor::run(FrameContext& ctx) {
     log("ColorProcessor balance processing");
 }
 

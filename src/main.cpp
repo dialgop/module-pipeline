@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "Pipeline.h"
+#include "FrameContext.h"
 #include "CameraSensor.h"
 #include "MovementDetector.h"
 #include  "ColorProcessor.h"
@@ -15,15 +16,16 @@ int main() {
     pipeline.add(std::make_shared<MovementDetector>());
     pipeline.add(std::make_shared<ColorProcessor>());
 
-    auto should_run = [](const std::shared_ptr<IModule>& m) {
+    auto should_run = [](const std::shared_ptr<IModule>& m, FrameContext& ctx) {
         return m->name().find("Detector") != std::string::npos;
     };
 
-    auto on_run = [](const std::shared_ptr<IModule>& m) {
+    auto on_run = [](const std::shared_ptr<IModule>& m, FrameContext& ctx) {
         std::cout << "ON_RUN: " << m->name() << "\n";
     };
 
-    int executed = pipeline.run(should_run, on_run);
+    FrameContext ctx;
+    int executed = pipeline.run(ctx, should_run, on_run);
 
     std::cout << "Executing pipeline: \n";
 

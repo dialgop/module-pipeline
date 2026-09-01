@@ -4,12 +4,17 @@ project(module_pipe_project)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(OpenCV REQUIRED)
+
 # Creating executable
 add_executable(module_pipeline_project)
 
 #Add includes
 target_include_directories(module_pipeline_project
-PRIVATE ${PROJECT_SOURCE_DIR}/include)
+PRIVATE ${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
+
+target_link_libraries(module_pipeline_project
+PRIVATE ${OpenCV_LIBS})
 
 #Add cpp sources
 target_sources(module_pipeline_project

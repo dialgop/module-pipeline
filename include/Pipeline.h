@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include "FrameContext.h"
+
 template<typename ModuleT>
 class Pipeline {
 
@@ -17,15 +19,15 @@ public:
     }
 
     template<typename ShouldRun, typename OnRun>
-    int run(ShouldRun should_run, OnRun on_run) {
+    int run(FrameContext& ctx, ShouldRun should_run, OnRun on_run) {
         int executed = 0;
 
         std::for_each(modules.begin(), modules.end(),
             [&](const std::shared_ptr<ModuleT>& m) {
-                if (should_run(m)) {
+                if (should_run(m, ctx)) {
                     std::cout << "RUN: " << m->name() << "\n";
-                    m->run();
-                    on_run(m);
+                    m->run(ctx);
+                    on_run(m, ctx);
                     ++executed;
                 } else {
                     std::cout << "SKIP: " << m->name() << "\n";

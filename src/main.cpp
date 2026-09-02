@@ -2,11 +2,13 @@
 #include <iostream>
 
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "Pipeline.h"
 #include "FrameContext.h"
 #include "CameraSensor.h"
 #include "MovementDetector.h"
+#include "ObjectDetector.h"
 #include "SegmentationProcessor.h"
 #include "ColorProcessor.h"
 
@@ -15,6 +17,7 @@ int main() {
 
     pipeline.add(std::make_shared<CameraSensor>(std::string(PROJECT_SOURCE_DIR) + "/external/park.mp4"));
     pipeline.add(std::make_shared<MovementDetector>());
+    pipeline.add(std::make_shared<ObjectDetector>());
     pipeline.add(std::make_shared<SegmentationProcessor>());
     pipeline.add(std::make_shared<ColorProcessor>());
 
@@ -27,6 +30,11 @@ int main() {
         // the caller gets a chance to check frameValid and stop the loop.
         if (moduleName == "MovementDetector") {
             return ctx.frameValid;
+        }
+        if (moduleName == "ObjectDetector") {
+            // Only worth spending real model inference when MovementDetector
+            // actually found candidate regions to crop and check.
+            return ctx.frameValid && ctx.motionDetected;
         }
         if (moduleName == "SegmentationProcessor") {
             return ctx.frameValid && ctx.motionDetected;
@@ -54,7 +62,14 @@ int main() {
         if (!ctx.frameValid) break;
         ++frameNumber;
 
-        cv::imshow("module_pipe_project", ctx.frame);
+        // Draw on a display-only copy - ctx.frame itself gets fully
+        // replaced by the next CameraSensor::run() call anyway, but this
+        // keeps "working data" and "what we show the user" clearly separate.
+        cv::Mat display = ctx.frame.clone();
+        for (const cv::Rect& person : ctx.detectedPeople) {
+            cv::rectangle(display, person, cv::Scalar(0, 0, 255), 2);
+        }
+        cv::imshow("module_pipe_project", display);
         if (cv::waitKey(1) == 27) break; // Esc to exit
     }
 

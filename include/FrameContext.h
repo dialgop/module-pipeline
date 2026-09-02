@@ -15,5 +15,7 @@ struct FrameContext {
     cv::Mat motionMask;
     std::vector<cv::Rect> motionRegions; // one bounding box per distinct motion cluster
 
+    std::vector<cv::Rect> detectedPeople; // motionRegions, verified to actually contain a person
+
     cv::Mat segmentedMask;
 };

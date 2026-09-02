@@ -72,7 +72,14 @@ void MovementDetector::run(FrameContext& ctx) {
     // One person can still fragment into several nearby regions (e.g. head
     // vs. legs) even after the dilation above - merge any regions whose
     // margin-expanded boxes overlap, repeatedly, until nothing more merges.
+    // Capped by kMaxMergedFraction of the frame size so two genuinely
+    // separate, distant people (e.g. one at each edge of the frame) never
+    // get glued into one nonsensical region just because a chain of
+    // smaller in-between merges happened to connect them.
     constexpr int kMergeMargin = 40;
+    constexpr double kMaxMergedFraction = 0.5;
+    const int maxMergedWidth = static_cast<int>(ctx.frame.cols * kMaxMergedFraction);
+    const int maxMergedHeight = static_cast<int>(ctx.frame.rows * kMaxMergedFraction);
     bool merged = true;
     while (merged) {
         merged = false;
@@ -80,12 +87,13 @@ void MovementDetector::run(FrameContext& ctx) {
             const cv::Rect expanded(regions[i].x - kMergeMargin, regions[i].y - kMergeMargin,
                                      regions[i].width + 2 * kMergeMargin, regions[i].height + 2 * kMergeMargin);
             for (size_t j = i + 1; j < regions.size(); ++j) {
-                if ((expanded & regions[j]).area() > 0) {
-                    regions[i] |= regions[j]; // cv::Rect::operator|= grows regions[i] to cover both
-                    regions.erase(regions.begin() + static_cast<long>(j));
-                    merged = true;
-                    break;
-                }
+                if ((expanded & regions[j]).area() <= 0) continue;
+                const cv::Rect combined = regions[i] | regions[j];
+                if (combined.width > maxMergedWidth || combined.height > maxMergedHeight) continue;
+                regions[i] = combined;
+                regions.erase(regions.begin() + static_cast<long>(j));
+                merged = true;
+                break;
             }
         }
     }

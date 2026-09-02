@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include <vector>
+
 #include <opencv2/core.hpp>
 
 struct FrameContext {
@@ -11,7 +13,7 @@ struct FrameContext {
 
     bool motionDetected = false;
     cv::Mat motionMask;
-    cv::Rect motionRoi;
+    std::vector<cv::Rect> motionRegions; // one bounding box per distinct motion cluster
 
     cv::Mat segmentedMask;
 };

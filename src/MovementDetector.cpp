@@ -9,7 +9,7 @@
 namespace {
     // Tunable magic numbers, kept together so they're easy to find and adjust.
     constexpr double kDiffThreshold = 25.0; // absdiff value above which a pixel counts as "changed"
-    constexpr int kMinMotionPixels = 200;   // total changed pixels below which we call it noise, not motion
+    constexpr int kMinMotionPixels = 200;   // a cluster's changed-pixel count below which we call it noise, not motion
 }
 
 MovementDetector::MovementDetector() {
@@ -39,28 +39,65 @@ void MovementDetector::run(FrameContext& ctx) {
 
     cv::Mat thresh;
     cv::threshold(diff, thresh, kDiffThreshold, 255, cv::THRESH_BINARY);
-    // Dilate to merge nearby changed-pixel blobs into fewer, larger regions
-    // before we count them, so scattered single-pixel noise doesn't survive
-    // as isolated specks.
-    cv::dilate(thresh, thresh, cv::Mat(), cv::Point(-1, -1), 2);
+    // A walking person's torso barely changes frame-to-frame - motion
+    // concentrates at moving limb edges - so the raw mask fragments into
+    // several small blobs per person (a hand here, a foot there) rather
+    // than one solid shape. A large structuring element bridges those
+    // gaps back into one cluster per person, without merging separate
+    // people who are typically much further apart than this reaches.
+    static const cv::Mat kDilateKernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(25, 25));
+    cv::dilate(thresh, thresh, kDilateKernel);
 
-    // We gate on *total* changed pixels rather than the single largest
-    // contour: on real footage, motion often shows up as many small
-    // scattered changed regions rather than one solid blob (see
-    // README.md), so summing catches real motion that a single-contour
-    // check would miss entirely.
-    const int changedPixels = cv::countNonZero(thresh);
-    ctx.motionDetected = changedPixels >= kMinMotionPixels;
+    // connectedComponentsWithStats labels every separate blob of changed
+    // pixels individually (label 0 is always the background), instead of
+    // collapsing everything into one combined region the way a single
+    // boundingRect(thresh) or "sum all changed pixels" check would. Each
+    // real blob becomes its own candidate ROI - e.g. one per person - and
+    // we filter out clusters too small to be real motion the same way the
+    // old total-pixel gate filtered noise (see README.md), just applied
+    // per-cluster instead of to the sum.
+    cv::Mat labels, stats, centroids;
+    const int numLabels = cv::connectedComponentsWithStats(thresh, labels, stats, centroids);
+
+    std::vector<cv::Rect> regions;
+    for (int label = 1; label < numLabels; ++label) {
+        const int area = stats.at<int>(label, cv::CC_STAT_AREA);
+        if (area < kMinMotionPixels) continue;
+        regions.emplace_back(stats.at<int>(label, cv::CC_STAT_LEFT),
+                              stats.at<int>(label, cv::CC_STAT_TOP),
+                              stats.at<int>(label, cv::CC_STAT_WIDTH),
+                              stats.at<int>(label, cv::CC_STAT_HEIGHT));
+    }
+
+    // One person can still fragment into several nearby regions (e.g. head
+    // vs. legs) even after the dilation above - merge any regions whose
+    // margin-expanded boxes overlap, repeatedly, until nothing more merges.
+    constexpr int kMergeMargin = 40;
+    bool merged = true;
+    while (merged) {
+        merged = false;
+        for (size_t i = 0; i < regions.size() && !merged; ++i) {
+            const cv::Rect expanded(regions[i].x - kMergeMargin, regions[i].y - kMergeMargin,
+                                     regions[i].width + 2 * kMergeMargin, regions[i].height + 2 * kMergeMargin);
+            for (size_t j = i + 1; j < regions.size(); ++j) {
+                if ((expanded & regions[j]).area() > 0) {
+                    regions[i] |= regions[j]; // cv::Rect::operator|= grows regions[i] to cover both
+                    regions.erase(regions.begin() + static_cast<long>(j));
+                    merged = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    ctx.motionDetected = !regions.empty();
     ctx.motionMask = thresh;
-    // boundingRect() accepts a mask directly, treating its nonzero pixels
-    // as a point set - this is the bounding box over every changed pixel,
-    // not just one contour.
-    ctx.motionRoi = cv::boundingRect(thresh);
+    ctx.motionRegions = std::move(regions);
 
     prevGray = gray;
 
     if (ctx.motionDetected) {
-        log("Detected movement, changedPixels=" + std::to_string(changedPixels));
+        log("Detected movement, clusters=" + std::to_string(ctx.motionRegions.size()));
     } else {
         log("No movement detected");
     }

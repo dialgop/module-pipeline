@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include <opencv2/core.hpp>
+
 #include "IModule.h"
 #include "LoggerBase.h"
 

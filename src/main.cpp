@@ -19,8 +19,12 @@ int main() {
     pipeline.add(std::make_shared<ColorProcessor>());
 
     auto should_run = [](const std::shared_ptr<IModule>& m, FrameContext& ctx) {
-        return m->name().find("Detector") != std::string::npos;
         const std::string& moduleName = m->name();
+        // Every stage after CameraSensor needs ctx.frameValid too: once the
+        // video source is exhausted, CameraSensor sets frameValid=false and
+        // empties ctx.frame within this same pipeline.run() call, and the
+        // later stages must not touch that empty frame/stale data before
+        // the caller gets a chance to check frameValid and stop the loop.
         if (moduleName == "MovementDetector") {
             return ctx.frameValid;
         }

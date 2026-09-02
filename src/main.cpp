@@ -37,16 +37,22 @@ int main() {
             return ctx.frameValid && ctx.motionDetected;
         }
         if (moduleName == "SegmentationProcessor") {
-            return ctx.frameValid && ctx.motionDetected;
+            // SegmentationProcessor now segments each ctx.detectedPeople
+            // box, so it needs at least one to have anything to do.
+            // Requiring ctx.motionDetected too matters for freshness, not
+            // just correctness: ctx.detectedPeople is only repopulated when
+            // ObjectDetector runs, which itself only happens when
+            // motionDetected is true - without this check, a motion-free
+            // tick would leave detectedPeople holding stale boxes from an
+            // earlier tick, and this stage would wrongly run against them.
+            return ctx.frameValid && ctx.motionDetected && !ctx.detectedPeople.empty();
         }
         if (moduleName == "ColorProcessor") {
-            // Also require ctx.motionDetected (fresh every tick), not just a
-            // non-empty segmentedMask: when SegmentationProcessor is skipped
-            // (no motion this tick), segmentedMask isn't cleared - it just
-            // keeps whatever it was from the last tick that did have
-            // motion, which would otherwise be stale data matched against
-            // the current, unrelated frame.
-            return ctx.frameValid && ctx.motionDetected && !ctx.segmentedMask.empty();
+            // Mirrors SegmentationProcessor's own gate exactly: ctx.segmentedMask
+            // is only refreshed when SegmentationProcessor actually runs, so
+            // ColorProcessor must require the same conditions - otherwise it
+            // could sample a stale silhouette against an unrelated current frame.
+            return ctx.frameValid && ctx.motionDetected && !ctx.detectedPeople.empty();
         }
         return true; // CameraSensor: always attempt to capture the next frame
     };

@@ -13,7 +13,7 @@
 int main() {
     Pipeline<IModule> pipeline;
 
-    pipeline.add(std::make_shared<CameraSensor>(std::string(PROJECT_SOURCE_DIR) + "/external/example.mp4"));
+    pipeline.add(std::make_shared<CameraSensor>(std::string(PROJECT_SOURCE_DIR) + "/external/park.mp4"));
     pipeline.add(std::make_shared<MovementDetector>());
     pipeline.add(std::make_shared<SegmentationProcessor>());
     pipeline.add(std::make_shared<ColorProcessor>());
@@ -32,7 +32,13 @@ int main() {
             return ctx.frameValid && ctx.motionDetected;
         }
         if (moduleName == "ColorProcessor") {
-            return ctx.frameValid && !ctx.segmentedMask.empty();
+            // Also require ctx.motionDetected (fresh every tick), not just a
+            // non-empty segmentedMask: when SegmentationProcessor is skipped
+            // (no motion this tick), segmentedMask isn't cleared - it just
+            // keeps whatever it was from the last tick that did have
+            // motion, which would otherwise be stale data matched against
+            // the current, unrelated frame.
+            return ctx.frameValid && ctx.motionDetected && !ctx.segmentedMask.empty();
         }
         return true; // CameraSensor: always attempt to capture the next frame
     };

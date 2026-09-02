@@ -26,6 +26,7 @@ target_sources(module_pipeline_project
 PRIVATE src/main.cpp
         src/CameraSensor.cpp
         src/MovementDetector.cpp
+        src/ObjectDetector.cpp
         src/SegmentationProcessor.cpp
         src/ColorProcessor.cpp
 )

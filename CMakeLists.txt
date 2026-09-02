@@ -16,6 +16,11 @@ PRIVATE ${PROJECT_SOURCE_DIR}/include ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(module_pipeline_project
 PRIVATE ${OpenCV_LIBS})
 
+# Lets main.cpp build an absolute path to external/example.mp4 regardless of
+# the working directory the executable is launched from.
+target_compile_definitions(module_pipeline_project
+PRIVATE PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+
 #Add cpp sources
 target_sources(module_pipeline_project
 PRIVATE src/main.cpp

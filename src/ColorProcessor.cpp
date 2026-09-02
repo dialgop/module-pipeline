@@ -4,6 +4,8 @@
 
 #include "ColorProcessor.h"
 
+#include <opencv2/core.hpp>
+
 ColorProcessor::ColorProcessor() {
     log("Created ColorProcessor");
 }
@@ -13,7 +15,9 @@ ColorProcessor::~ColorProcessor() {
 }
 
 void ColorProcessor::run(FrameContext& ctx) {
-    log("ColorProcessor balance processing");
+    const cv::Scalar meanColor = cv::mean(ctx.frame, ctx.segmentedMask);
+    log("Average color (BGR) = [" + std::to_string(meanColor[0]) + ", "
+        + std::to_string(meanColor[1]) + ", " + std::to_string(meanColor[2]) + "]");
 }
 
 std::string ColorProcessor::name() const {

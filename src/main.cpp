@@ -1,23 +1,36 @@
 #include <memory>
-#include <vector>
 #include <iostream>
-#include <algorithm>
+
+#include <opencv2/highgui.hpp>
 
 #include "Pipeline.h"
 #include "FrameContext.h"
 #include "CameraSensor.h"
 #include "MovementDetector.h"
-#include  "ColorProcessor.h"
+#include "SegmentationProcessor.h"
+#include "ColorProcessor.h"
 
 int main() {
     Pipeline<IModule> pipeline;
 
-    pipeline.add(std::make_shared<CameraSensor>(1));
+    pipeline.add(std::make_shared<CameraSensor>(std::string(PROJECT_SOURCE_DIR) + "/external/example.mp4"));
     pipeline.add(std::make_shared<MovementDetector>());
+    pipeline.add(std::make_shared<SegmentationProcessor>());
     pipeline.add(std::make_shared<ColorProcessor>());
 
     auto should_run = [](const std::shared_ptr<IModule>& m, FrameContext& ctx) {
         return m->name().find("Detector") != std::string::npos;
+        const std::string& moduleName = m->name();
+        if (moduleName == "MovementDetector") {
+            return ctx.frameValid;
+        }
+        if (moduleName == "SegmentationProcessor") {
+            return ctx.frameValid && ctx.motionDetected;
+        }
+        if (moduleName == "ColorProcessor") {
+            return ctx.frameValid && !ctx.segmentedMask.empty();
+        }
+        return true; // CameraSensor: always attempt to capture the next frame
     };
 
     auto on_run = [](const std::shared_ptr<IModule>& m, FrameContext& ctx) {
@@ -25,11 +38,17 @@ int main() {
     };
 
     FrameContext ctx;
-    int executed = pipeline.run(ctx, should_run, on_run);
+    int frameNumber = 0;
+    while (true) {
+        pipeline.run(ctx, should_run, on_run);
+        if (!ctx.frameValid) break;
+        ++frameNumber;
 
-    std::cout << "Executing pipeline: \n";
+        cv::imshow("module_pipe_project", ctx.frame);
+        if (cv::waitKey(1) == 27) break; // Esc to exit
+    }
 
-    std::cout << "\nTotal executed modules: " << executed << std::endl;
+    std::cout << "\nProcessed " << frameNumber << " frames" << std::endl;
 
     return 0;
 }

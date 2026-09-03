@@ -4,9 +4,9 @@ A modular C++ processing pipeline showcasing interfaces, inheritance, templates,
 
 The project started as a simulated exercise (every module just logged a fake message) and has since been converted, module by module, into a real pipeline operating on real video frames.
 
-![Pipeline output: detected people outlined in red, each with their own partial silhouette in green, and the sampled average color shown bottom-left](docs/images/pipeline_output.png)
+![Pipeline output: detected people outlined in red, each with a real segmentation model's silhouette highlighted in green, and the sampled average color shown bottom-left](docs/images/pipeline_output.png)
 
-*Real output from the pipeline running on `external/park.mp4`: `MovementDetector` flags moving regions, `ObjectDetector` verifies which ones are actually people (red boxes), `SegmentationProcessor` outlines each person's own silhouette within their box (green), and `ColorProcessor` samples its average color (swatch, bottom-left).*
+*Real output from the pipeline running on `external/park.mp4`: `MovementDetector` flags moving regions, `ObjectDetector` verifies which ones are actually people (red boxes), `SegmentationProcessor` runs a real segmentation model within each person's box (green), and `ColorProcessor` samples its average color (swatch, bottom-left).*
 
 ## Architecture
 

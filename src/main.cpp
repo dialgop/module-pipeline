@@ -13,11 +13,19 @@
 #include "ColorProcessor.h"
 
 int main() {
+    // Pick which model ObjectDetector runs here - a one-line change, not a
+    // rebuild of the class. MobileNetSsd: faster (~90s for park.mp4), one
+    // clean box per person. Yolox: modern architecture, ~9x slower here and
+    // tends to split a tall person into two boxes on this project's small
+    // per-region crops. See README.md's "Person detection strategy" for
+    // the full measured comparison.
+    constexpr DetectorBackend kObjectDetectorBackend = DetectorBackend::MobileNetSsd;
+
     Pipeline<IModule> pipeline;
 
     pipeline.add(std::make_shared<CameraSensor>(std::string(PROJECT_SOURCE_DIR) + "/external/park.mp4"));
     pipeline.add(std::make_shared<MovementDetector>());
-    pipeline.add(std::make_shared<ObjectDetector>());
+    pipeline.add(std::make_shared<ObjectDetector>(kObjectDetectorBackend));
     pipeline.add(std::make_shared<SegmentationProcessor>());
     pipeline.add(std::make_shared<ColorProcessor>());
 
